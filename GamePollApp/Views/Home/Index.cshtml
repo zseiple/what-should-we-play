@@ -1,0 +1,61 @@
+﻿@{
+    ViewData["Title"] = "What Should We Play?";
+    @model GamePollApp.Models.SteamUserInfoModel;
+}
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/js/friendselector.js"></script>
+
+<h1 class="display-4">What Should We Play?</h1>
+@if (User?.Identity?.IsAuthenticated ?? false)
+{
+    /*<script>
+        let usernameManager = new UsernameManager();
+        $(document).ready(function () {
+            $('#username-list').on("click", '.username-entry', function () {
+                usernameManager.RemoveUsernameFromList(this); alert(usernameManager._usernames.length);
+            });
+
+            $('#username-form').submit(function () {
+                let fields = $(this).serializeArray();
+                $.each(fields, function (i, field) {
+
+                    usernameManager.AddUsernameToList($('#username-list'), field.value);
+                });
+
+                return false;
+            });
+        });
+    </script>*/
+
+<div class="text-center">
+
+    <h2>Welcome @Model.displayName! Who do you want to play with?</h2>
+    <div id="friend-selector">
+        <form id="friend-selection-form" name="friend-selection-form">
+            <label for="friend-search">Search Friends</label>
+            <input type="text" placeholder="Start typing here!" id="friend-search" name="friend-search" onkeyup=""/>
+            <label for="submit-friends">Done</label>
+            <input type="submit" id="submit-friends" name="submit-friends" />
+        </form>
+
+        <ul id="friend-list">
+            @foreach(var x in Model.friendList)
+                {
+                    <li><img src="@x.profilePicUrl"/> @x.displayName</li>
+                }
+        </ul>
+
+    </div>
+
+    <a href="/signout"><button>Click to Signout</button></a>
+
+</div>
+}
+else
+{
+<div class="text-center">
+    <h2>Welcome, please sign in through Steam to begin.</h2>
+    <a href="/signin"><button>Click to login</button></a>
+</div>
+}
