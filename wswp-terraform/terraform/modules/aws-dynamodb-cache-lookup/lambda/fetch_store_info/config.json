@@ -1,0 +1,9 @@
+{
+  "search_url_base": "https://store.steampowered.com/app/",
+  "search_strings": [
+    "Online Co-Op",
+    "Online PvP",
+    "LAN Co-Op",
+    "LAN PvP"
+  ]
+}
