@@ -16,9 +16,24 @@ const lambda = new AWS.Lambda({
  *      #The app ids to check dynamodb for
  *      app_ids = []
  * }
+ *
+ * Expected Output
+ * {
+ *      app_details: [
+ *      {
+ *          app_id: <string>
+ *          features: {
+ *              <feature1>: <bool>,
+ *              <feature2>: <bool>,
+ *              <featureN>: <bool>
+ *          }
+ *      }
+ *      ]
+ * }
 */
 
 /*
+ * | getAppDetails | 
  * This function handles checking the DynamoDB instance for requested app_ids and pulls any information on that app.
  * If the app id is not present in the DB, this function will call another lambda function (fetchStoreInfo) to fetch the info from the Steam
  * Store page. When that function returns the info from the missing app ids, this function will also handle the inserts to the table.
@@ -26,9 +41,9 @@ const lambda = new AWS.Lambda({
 exports.handler = async function (event, context) {
     console.log("EVENT: \n" + JSON.stringify(event, null, 2));
 
-    const MAX_ITERATIONS = 10;
+    const MAX_BATCHES = 5;
     const BATCH_SIZE = 100;
-    let batch = [];
+
 
     //Copy input array
     let requestedAppIds = event.app_ids.slice();
@@ -36,91 +51,123 @@ exports.handler = async function (event, context) {
     let foundIds = [], missedIds = [];
     let ongoingPromises = [];
 
-    let currentIteration = 0;
+    let currentBatch = 1;
     //Continue while there are still batches
-    while (requestedAppIds.length > 0 && currentIteration < MAX_ITERATIONS) {
-        //Split into batches
-        batch = requestedAppIds.splice(0, BATCH_SIZE);
+    while (requestedAppIds.length > 0 && currentBatch <= MAX_BATCHES) {
+        //Split into batch
+        let batch = requestedAppIds.splice(0, BATCH_SIZE);
 
         let batchPromise = fetchAppDetails(batch)
             .then(response => {
+                console.log(`fetchAppDetails func response:\n${JSON.stringify(response)}`)
                 //Add Found Ids to collection
-                response["Hit"].forEach(appDetail => {
-                    let id, clone = { ...appDetail };
-                    clone[id = Object.keys(appDetail)[0]] = { ...appDetail[id] }
-                    foundIds.push(clone);
+                response["Hit"].forEach(appDetail => { foundIds.push(appDetail); });
 
-                    //Add Missed Ids to collection, once loop completes these will be added into table
-                    missedIds = missedIds.concat(response["Miss"]);
+                //Add Missed Ids to collection, once loop completes these will be added into table
+                missedIds = missedIds.concat(response["Miss"]);
 
-                    //Add Unprocessed Ids back into requestedAppIds to get reprocessed
-                    requestedAppIds = requestedAppIds.concat(response["Unprocessed"]);
-                });
+                //Add Unprocessed Ids back into requestedAppIds to get reprocessed
+                requestedAppIds = requestedAppIds.concat(response["Unprocessed"]);
+
             })
             .catch(e => console.log(`Error in requesting from cache: ${e}`));
 
+        //Queue this batch on promise array to wait for completion
         ongoingPromises.push(batchPromise);
-
+        currentBatch++;
     }
 
-    if (currentIteration >= MAX_ITERATIONS)
-        console.log("[GetAppDetails] Maximum Iterations Reached");
+    if (currentBatch >= MAX_BATCHES)
+        console.log("Maximum Iterations Reached");
 
+
+
+    const NO_WRITE = false;
     //Batches Finished, now missed ID info need to be fetched. Missed IDs must be passed to fetchStoreInfo lambda function
     return Promise.all(ongoingPromises)
-        .then(() => { //
-            console.log(`Missed Ids that need requested to Lambda: ${missedIds.join(',')}`);
-            return invokeLambda(context, { "app_ids": missedIds });
+        .then(() => {
+            //Check which App IDs/Details were not found in cache, pass those to helper lambda to check
+            console.log(missedIds.length > 0 ?
+                `Missed Ids that need requested to Lambda: ${missedIds.join(',')}` :
+                `There are no missed Ids. We will not write to DynamoDB this run`
+            );
+
+            //Perform subsequent write operations IF there were ids not found in the cache
+            return missedIds.length > 0 ? invokeLambda(lambdaFunctions.FetchStoreInfo, context, { "app_ids": missedIds }) : Promise.resolve(NO_WRITE);
         })
-        .then(response => {
-            console.log("[GetAppDetails] Returned Response: \n" + response.Payload);
-            return response;
+        .then(missedIdDetails => {
+
+            //Write to DB and format response
+            if (missedIdDetails != NO_WRITE) {
+                missedIdDetails = JSON.parse(missedIdDetails.Payload);
+                console.log("Writing to DB..");
+
+                //User does not need to wait for the write, just start it and log response
+                invokeLambda(lambdaFunctions.WriteToCache, context, missedIdDetails);
+
+                //Format Missed IDs for foundIds response
+                missedIdDetails["app_id_features"].forEach(appDetail => { foundIds.push(appDetail); });
+            }
+            else
+                console.log("No DB Write is needed");
+
+
+            //Final response return
+            return { "app_details": foundIds };
         })
         .catch(e => {
             console.log(`Some error: ${e}`);
         });
 
-
-    //let response = await invokeLambda(context, missedIds);
 }
 
 //Sends the dynamoDB request and transforms response into a simple map
 const fetchAppDetails = async function (ids) {
     let response = await ddb.batchGetItem(generateBatchGetItemParams(ids)).promise()
         .then(data => data)
-        .catch(error => { console.log(error); });
+        .catch(error => { console.log(`fetchAppDetails error: ${error}`); });
     //{Responses: [<TABLENAME> : { <ATTRIBUTENAME> : {S: string}, <ATTRIBUTENAME2>: {}}]}
 
     console.log("DynamoDB Response \n" + JSON.stringify(response, null, 2));
 
     let result = {
         //Found Ids --  map of app id to all attributes found in DB
-        "Hit": [{}],
+        "Hit": [],
         //Missed Ids -- apps not found in DB
         "Miss": [],
-        //Ids that were unprocessed for any reason. These will get reprocessed
+        //Ids that were unprocessed for any reason. These will get retried in next batch
         "Unprocessed": []
     };
 
+    //Copy All ids, as we process the DynamoDB response
+    let missedIds = ids.slice();
+
+    //Format Hit Elements
     for (const item of response["Responses"][process.env.tableName]) {
         //Populate Hit field of result ==> { "Hit: [{ <app_id>: {<attribute2>: val, <attribute3>: val, ...}}]}
-        //result["Hit"][item[process.env.primaryKeyName][process.env.primaryKeyType]] = {};
         let formattedItem = {};
-        formattedItem[item[process.env.primaryKeyName][process.env.primaryKeyType]] = {};
+        let currentId = item[process.env.primaryKeyName][process.env.primaryKeyType]
+
+        formattedItem["app_id"] = currentId;
+        formattedItem["features"] = {};
 
         Object.entries(item).forEach(([key, value]) => {
             if (key != process.env.primaryKeyName) {
                 Object.entries(value).forEach(([subKey, subValue]) => {
-                    formattedItem[item[process.env.primaryKeyName][process.env.primaryKeyType]][key] = subValue;
+                    formattedItem["features"][key] = subValue;
                 });
             }
         });
 
+        //This one was successful so we know it was not missed
+        missedIds.splice(missedIds.indexOf(currentId), 1);
+
+        //Add details to result object
         result["Hit"].push(formattedItem);
     }
 
     //Populate Miss field
-    result["Miss"] = ids.filter(id => !result["Hit"].hasOwnProperty(id));
+    result["Miss"] = missedIds
 
     //Populate Unprocessed field (if needed)
     if (response["UnprocessedKeys"][process.env.tableName] != undefined) {
@@ -130,14 +177,22 @@ const fetchAppDetails = async function (ids) {
         }
     }
 
+    console.log(`formatted DynamoDB result:\n${JSON.stringify(result)}`);
     return result;
 }
 
-const invokeLambda = async function (context, payload) {
+//Lambda Options
+const lambdaFunctions = {
+    "FetchStoreInfo": process.env.fetchStoreInfoFunctionName,
+    "WriteToCache": process.env.writeToCacheFunctionName
+}
+
+const invokeLambda = async function (functionName, context, payload) {
     const params = {
-        FunctionName: process.env.helperLambdaFunctionName,
+        FunctionName: functionName,
         ClientContext: AWS.util.base64.encode(JSON.stringify(context)),
-        InvocationType: "RequestResponse",
+        //FetchStoreInfo needs to wait. WriteToCache does not need a response
+        InvocationType: functionName == lambdaFunctions.FetchStoreInfo ? "RequestResponse" : "Event",
         LogType: "Tail",
         Payload: JSON.stringify(payload)
     }

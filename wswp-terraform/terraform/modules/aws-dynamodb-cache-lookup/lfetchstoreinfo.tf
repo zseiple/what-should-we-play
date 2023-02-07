@@ -16,11 +16,12 @@ resource "aws_lambda_function" "fetch-store-info" {
   function_name = "fetchStoreInfo"
   source_code_hash = base64sha256(data.archive_file.fetchstoreinfo-payload.output_path)
 
-  role    = var.fetchstoreinfo-role-arn
+  role    = aws_iam_role.Lambda-FetchStoreInfo-Role.arn
   handler = "index.handler"
   runtime = "nodejs16.x"
 
-  memory_size = 1024
+  memory_size = 2048
+  timeout = 10
 
   layers = [aws_lambda_layer_version.jsdom_layer.arn]
 

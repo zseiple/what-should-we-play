@@ -61,11 +61,12 @@ resource "aws_lambda_function" "dynamodb-lookup" {
   function_name = "getAppDetails"
   source_code_hash = base64sha256(data.archive_file.getappdetails-payload.output_path)
 
-  role    = var.getappdetails-role-arn
+  role    = aws_iam_role.Lambda-GetAppDetails-Role.arn
   handler = "index.handler"
   runtime = "nodejs16.x"
 
-  memory_size = 1024
+  memory_size = 2048
+  timeout = 10
 
   environment {
     variables = {
@@ -75,7 +76,8 @@ resource "aws_lambda_function" "dynamodb-lookup" {
       tableName                = var.dynamodb.table_name
       primaryKeyName           = var.dynamodb.hash_key
       primaryKeyType           = var.dynamodb.attributes[index(var.dynamodb.attributes.*.name, var.dynamodb.hash_key)].type
-      helperLambdaFunctionName = aws_lambda_function.fetch-store-info.function_name
+      fetchStoreInfoFunctionName = aws_lambda_function.fetch-store-info.function_name
+      writeToCacheFunctionName = aws_lambda_function.write-to-cache.function_name
     }
   }
 }

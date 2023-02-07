@@ -33,8 +33,7 @@ module "dynamodb-lookup-cache" {
     table_name            = format("dynamodb-lookup-cache-%s", formatdate("DDMMYYYY", timestamp()))
   }
 
-  getappdetails-role-arn = aws_iam_role.Lambda-DynamoLookupCache-Role.arn
-  fetchstoreinfo-role-arn = aws_iam_role.Lambda-FetchStoreInfo-Role.arn
+  aws_account = local.aws_account
 }
 
 resource "aws_default_vpc" "default" {

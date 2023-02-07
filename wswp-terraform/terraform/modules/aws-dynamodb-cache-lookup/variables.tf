@@ -2,6 +2,11 @@ terraform {
   experiments = [module_variable_optional_attrs]
 }
 
+variable "aws_account" {
+    description = "The AWS account number"
+    type = string
+}
+
 variable "aws_region" {
   description = "The AWS region to deploy the lambda and dynamoDB instance"
   type        = string
@@ -85,14 +90,4 @@ variable "dynamodb" {
     condition     = contains(var.dynamodb.attributes[*].name, var.dynamodb.hash_key)
     error_message = "Hash Key must be the name of an existing attribute"
   }
-}
-
-variable "getappdetails-role-arn" {
-  description = "ARN of the role for lambda to use for dynamodb access"
-  type        = string
-}
-
-variable "fetchstoreinfo-role-arn" {
-    description = "ARN of the role for fetchStoreInfo Lambda"
-    type = string
 }

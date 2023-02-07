@@ -76,58 +76,18 @@ namespace GamePollApp.Controllers
         }
 
         //NEED TO REFORMAT THIS FUNCTION TO WORK IN BATCHES & stop being lazy & do the AWS DynamoDB implementation :/
+        //...after all this time... i did it
         [HttpGet("check-multiplayer")]
         public async Task<IActionResult> CheckMultiplayerSupport([FromQuery] string[] appids)
         {
             const int BATCH_SIZE = 100;
             List<int> batch = new List<int>();
+            
+            //Need to figure out how to call the AWS API gateway and then we're golden... so close to front-end development :)
 
-            appids..
-
-            string htmlPage = await _steamWebService.GetStorePageHTML(appid);
-            var response = new System.Dynamic.ExpandoObject() as IDictionary<string, object>;
-
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(htmlPage);
-
-            HtmlNodeCollection foundNodes = doc.DocumentNode.SelectNodes("//a[@class='game_area_details_specs_ctn']/div[@class='label']");
-
-            string[] filteredNodes = new string[1];
-
-            //In case node not found
-            if (foundNodes != null)
-            {
-                //Match to desired tags
-                filteredNodes = foundNodes.Where<HtmlNode>(node => multiplayerTags.Contains(node.InnerText))
-                    .Select(node => spacesAndDashes.Replace(node.InnerText, "").ToLower())
-                    .ToArray();
-            }
-
-            //Create Response
-            foreach (string tag in multiplayerTags.Select(tag => {
-                return spacesAndDashes.Replace(tag, "").ToLower();
-                }))
-            {
-                response.Add(tag, foundNodes != null ? filteredNodes.Contains(tag) : false);
-            }
 
             return Ok(JsonConvert.SerializeObject(response));
         }
 
-        [HttpGet("get-all-multiplayer-tags")]
-        public IActionResult GetMultiplayerTags()
-        {
-            var response = new System.Dynamic.ExpandoObject() as IDictionary<string, object>;
-
-            foreach (string tag in multiplayerTags.Select(tag => {
-                return spacesAndDashes.Replace(tag, "").ToLower();
-            }))
-            {
-                response.Add(tag, true);
-            }
-
-            return Ok(JsonConvert.SerializeObject(response));
-
-        }
     }
 }

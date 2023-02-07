@@ -90,7 +90,11 @@ async function getStorePage(newURL) {
     const requestOptions = {
         host: URLObj.host,
         path: URLObj.pathname,
-        method: "GET"
+        method: "GET",
+        //NEED TO SET COOKIE HERE TO BYPASS THE AGE RESTRICTED APPS
+        headers: {
+            'Cookie': "birthtime=0"
+        }
     }
 
     console.log(`host: ${requestOptions.host}\npath: ${requestOptions.path}`);
