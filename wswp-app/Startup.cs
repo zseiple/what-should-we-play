@@ -40,7 +40,7 @@ namespace GamePollApp
             .AddSteam(options => {
                 options.CorrelationCookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
                 options.CorrelationCookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
-                options.ApplicationKey = "580BB521A741E7C62074F007668E9E2A";
+                options.ApplicationKey = this.Configuration.GetSection("SteamAPI")["Key"];
             })
             .AddCookie("Bearer", options => { });
 

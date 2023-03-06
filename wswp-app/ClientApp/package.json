@@ -6,6 +6,7 @@
     "@babel/core": "^7.18.5",
     "@babel/preset-env": "^7.18.2",
     "bootstrap": "~4.6.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "jquery": "~3.6.0",
     "lodash.clonedeep": "^4.5.0",
     "merge": "^2.1.1",
@@ -21,10 +22,10 @@
   "devDependencies": {
     "ajv": "^6.9.1",
     "cross-env": "^5.2.0",
-    "eslint-config-react-app": "^5.2.0",
+    "eslint-config-react-app": "^7.0.0",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "nan": "^2.14.1",
-    "react-scripts": "^5.0.0",
+    "react-scripts": "^5.0.1",
     "typescript": "^3.7.5"
   },
   "eslintConfig": {

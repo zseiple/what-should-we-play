@@ -54,6 +54,25 @@ resource "aws_lambda_permission" "apigw" {
   source_arn = "${aws_api_gateway_rest_api.api_gateway.execution_arn}/*/*"
 }
 
+resource "local_file" "api-deployment-url" {
+    content = format("%s/%s/", aws_api_gateway_deployment.deployment.invoke_url, aws_api_gateway_resource.proxy.path_part)
+    filename = "${path.module}/apigw/apigw.conf"
+    
+    depends_on = [ aws_api_gateway_deployment.deployment ]
+}
+
+resource "aws_s3_object" "api-deployment-url-upload" {
+    bucket = var.s3-bucket-name
+    key = "apigw/apigw.conf"
+    source = local_file.api-deployment-url.filename
+
+    depends_on = [
+        local_file.api-deployment-url,
+        aws_s3_bucket.aws-dynamodb-cache-lookup-s3
+    ]
+ }
+
+ //Lambda
 resource "aws_lambda_function" "dynamodb-lookup" {
   //filename      = format("%s%s", local.getappdetails-dirpath, local.getappdetails-payloadfilename)
   s3_bucket = var.s3-bucket-name

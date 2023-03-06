@@ -44,9 +44,14 @@ exports.handler = async function (event, context) {
     const MAX_BATCHES = 5;
     const BATCH_SIZE = 100;
 
+    console.log(`Event being received:\n${JSON.stringify(event)}`);
 
     //Copy input array
-    let requestedAppIds = event.app_ids.slice();
+    let requestedAppIds = JSON.parse(JSON.parse(event.body));
+    console.log(`Keys:\n${Object.keys(requestedAppIds)}`);
+    console.log(`requestedAppIds:\n${requestedAppIds}`);
+    console.log(`Accessing app_ids:\n${requestedAppIds["app_ids"]}`);
+    requestedAppIds = requestedAppIds.app_ids.slice();
 
     let foundIds = [], missedIds = [];
     let ongoingPromises = [];
@@ -111,9 +116,16 @@ exports.handler = async function (event, context) {
             else
                 console.log("No DB Write is needed");
 
-
+            const finalResponse = {
+                "isBase64Encoded": false,
+                "statusCode": 200,
+                "headers": {},
+                "multiValueHeaders": {},
+                "body": JSON.stringify({ "app_details": foundIds })
+            };
+            console.log(finalResponse);
             //Final response return
-            return { "app_details": foundIds };
+            return finalResponse;
         })
         .catch(e => {
             console.log(`Some error: ${e}`);

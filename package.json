@@ -1,5 +1,8 @@
 {
   "dependencies": {
-    "react": "^18.2.0"
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-react-hooks": "^5.0.0-next-bfb9cbd8c-20230223",
+    "react": "^18.2.0",
+    "react-scripts": "^5.0.1"
   }
 }

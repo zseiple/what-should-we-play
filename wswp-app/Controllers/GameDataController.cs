@@ -80,13 +80,15 @@ namespace GamePollApp.Controllers
         [HttpGet("check-multiplayer")]
         public async Task<IActionResult> CheckMultiplayerSupport([FromQuery] string[] appids)
         {
+            
             const int BATCH_SIZE = 100;
             List<int> batch = new List<int>();
-            
-            //Need to figure out how to call the AWS API gateway and then we're golden... so close to front-end development :)
+
+        //Need to figure out how to call the AWS API gateway and then we're golden... so close to front-end development :)
 
 
-            return Ok(JsonConvert.SerializeObject(response));
+
+            return Ok();
         }
 
     }

@@ -157,3 +157,7 @@ resource "aws_iam_role_policy_attachment" "Lambda-WriteToCache-PolicyAttachment"
   role       = aws_iam_role.Lambda-WriteToCache-Role.name
   policy_arn = aws_iam_policy.Lambda-WriteToCache-Policy.arn
 }
+
+data "aws_iam_policy" "APIGateway-LoggingRole" {
+    arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
