@@ -16,12 +16,14 @@ COPY *.csproj ./
 RUN dotnet restore
 
 COPY . ./
-RUN dotnet publish -c Debug -o out
+RUN dotnet publish -c Release -o out
 
 #Create and copy final image
 FROM mcr.microsoft.com/dotnet/sdk:5.0
 ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_ENVIRONMENT=Production
 WORKDIR /app
 COPY --from=build-env app/out .
+
 EXPOSE 80
 ENTRYPOINT ["dotnet", "wswp-app.dll"]
