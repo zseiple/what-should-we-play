@@ -4,7 +4,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
+
+    dns = {
+        source = "hashicorp/dns"
+        version = "~> 3.2.4"
+    }
   }
+
+    
 
   required_version = ">= 1.2.0"
 }
@@ -36,9 +43,6 @@ module "dynamodb-lookup-cache" {
   aws_account = local.aws_account
 }
 
-resource "aws_default_vpc" "default" {
-  tags = merge(local.tags, { Name = "DefaultVPC" })
-}
 
 #resource "aws_instance" "app_server" {
 #  ami           = "ami-097a2df4ac947655f"
