@@ -9,6 +9,9 @@
 
 #keys
 **/wswp-terraform/keys/**
+#certs
+*.pem
+*.crt
 
 # User-specific files
 *.rsuser

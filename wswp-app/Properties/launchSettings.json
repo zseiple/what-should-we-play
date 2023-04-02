@@ -23,7 +23,7 @@
       },
       "dotnetRunMessages": "true",
       "nativeDebugging": true,
-      "applicationUrl": "http://localhost:9797;"
+      "applicationUrl": "http://localhost:9797"
     }
   }
 }

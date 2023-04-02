@@ -18,12 +18,19 @@ RUN dotnet restore
 COPY . ./
 RUN dotnet publish -c Release -o out
 
-#Create and copy final image
+#Create and copy final image, set env variables
 FROM mcr.microsoft.com/dotnet/sdk:5.0
-ENV ASPNETCORE_URLS=http://+:80
+
+ENV ASPNETCORE_URLS=http://+:80;https://+:443
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_HTTPS_PORT=9797
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/https/cert.crt
+ENV ASPNETCORE_Kestrel__Certificates__Default__KeyPath=/https/key.pem
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password=""
+
 WORKDIR /app
 COPY --from=build-env app/out .
 
-EXPOSE 80
+EXPOSE 9796/tcp
+EXPOSE 9797/tcp
 ENTRYPOINT ["dotnet", "wswp-app.dll"]
