@@ -1,0 +1,26 @@
+[
+  {
+    "name": "wswp-server",
+    "image": "382376429664.dkr.ecr.us-east-2.amazonaws.com/wswp-images:test",
+    "cpu": 1024,
+    "memory": 256,
+    "entryPoint": [
+      "/bin/sh",
+      "-c",
+      "aws s3 cp s3://${bucket_name}/https/certs /https/ --recursive && dotnet wswp-app.dll"
+    ],
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 9796,
+        "hostPort": 80,
+        "protocol": "tcp"
+      },
+      {
+        "containerPort": 9797,
+        "hostPort": 443,
+        "protocol": "tcp"
+      }
+    ]
+  }
+]

@@ -2,6 +2,31 @@ terraform {
   experiments = [module_variable_optional_attrs]
 }
 
+variable "vpc_cidr_block" {
+    type = string
+}
+
+variable "subnets" {
+    type = object({
+        public = map(object({
+        cidr_block = string,
+        availability_zone = string
+        })),
+        private = map(object({
+        cidr_block = string,
+        availability_zone = string
+        }))
+    })
+}
+
+variable "vpc_endpoints" {
+    description = "A map of AWS endpoints to be used for VPC endpoint"
+    type = object({
+        Gateway = map(string),
+        Interface = map(string)
+    })
+}
+
 variable "aws_region" {
   description = "AWS Region where configuration will be applied"
   type        = string
